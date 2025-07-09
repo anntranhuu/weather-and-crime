@@ -57,18 +57,18 @@ This project explores how **crime rates in Colchester (UK)** vary across time, s
 
 - How to create complex plots that are also easy to understand
 - How to integrate and analyse multi-source data (weather + crime)  
-- Effective use of **interactive geospatial visualisation** tools  
+- Effective use of interactive geospatial visualisation tools  
 - Communicating complex insights through compelling plots
 
 ---
 
 ## 📁 Project Structure
 
-📦 crime-weather-analysis/
-┣ 📄 Crime_Weather_Analysis.html ← Full interactive report
-┣ 📄 README.md ← This file
-┣ 📄 /scripts/ ← R script for creating whole Rmd file
-┗ 📁 /data/ ← Datasets
+📦 crime-weather-analysis/  
+┣ 📄 Crime_Weather_Analysis.html ← Full interactive report  
+┣ 📄 README.md ← This file  
+┣ 📄 /scripts/ ← R script for creating whole Rmd file  
+┗ 📁 /data/ ← Datasets  
 
 
 ---

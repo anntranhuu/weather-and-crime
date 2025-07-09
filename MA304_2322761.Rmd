@@ -1,0 +1,372 @@
+---
+title: "MA304 Assignment"
+author: 'Student Registration Number: 2322761'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, include = TRUE)
+rm(list = ls())
+
+#install.packages("dplyr")
+#install.packages("ggplot2")
+#install.packages("randomcoloR") #
+#install.packages("leaflet")
+#install.packages("tidyverse")
+#install.packages("lubridate")
+#install.packages("plotly")
+#install.packages("ggcorrplot")
+#install.packages("ggforce)
+```
+
+Using various data visualization tools, this report aims to analyse a policing data set from Colchester, England in 2023, and whether there were any patterns to be seen in relation to crime and various aspects of the weather. An excerpt of the crime data can be seen below:
+
+```{r}
+crime_data <- read.csv("crime23.csv")
+head(crime_data)
+```
+
+# General Overview
+
+### Frequency of each category of crime
+
+The data set gives information about 6878 observations on 12 different variables: the category of the crime, the persistent id (i.e. the unique identifier of that crime), the date of the crime, latitude, longitude, street ID, street name, context (extra information about the crime), ID of the crime (for the API), location type (i.e. whether it took place at a normal police force location or a British Transport location), location sub-type, and the outcome status. To get a better picture of the crime data, a bar chart was plotted showing the different crime types and their relative frequencies.
+
+```{r Bar chart, message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+
+freq_of_each_category <- crime_data %>%
+  count(category) 
+
+freq_of_each_category %>%
+  ggplot(aes(x = reorder(category, n), 
+             y = n)) + 
+  geom_col(fill = "cadetblue3") + labs(x = "Category of Crime", 
+                    y = "Frequency of Crime",
+                    title = "Violent crime was the most common category") + coord_flip()
+```
+
+---
+The bar chart shows that, by far, the most common type of crime was violent crime, with approximately 2600 incidents that year - a large contrast in comparison to the next most common type of crime, anti-social behavior, which had approximately 700 incidents reported that year. This could be due to the fact that violent crime encompasses a range of offenses, from common assault and Actual Bodily Harm, all the way to murder (1), and so it would be interesting to see the frequencies for each category which falls within violent crime to get a better idea of what was the most common type of crime. The categories with the lowest frequency of incidents were robbery, other crime, theft from the person, and possession of weapons, each with less than 100 incidents that year.
+
+### Proportion of outcomes
+
+Next, a series of pie charts were plotted to view the proportion of the outcomes within each crime category:
+
+```{r Pie charts, fig.height=11, fig.width=10, warning=FALSE}
+#create pie charts
+
+ggplot(crime_data, aes(x="",  fill = factor(outcome_status))) +
+  geom_bar(stat = "count", width = 1, position =  "fill") + 
+  coord_polar("y", start=0) + 
+  theme_void() +
+  facet_wrap(~ category, nrow = 4, labeller = labeller(category = label_wrap_gen(width = 15))) +
+  scale_fill_manual(values = c("lightgoldenrod","orchid3","orange", "lightpink","lightsteelblue", "rosybrown", "cadetblue3", "royalblue4","seagreen", "plum", "hotpink","lightskyblue4", "darkolivegreen3", "slategray3")) +
+  theme(legend.position = "bottom",
+        legend.text.align = 0,
+        strip.placement = "outside",
+        strip.margin = margin(b=20)) +
+  labs(fill = "Outcome Status") +
+  guides(fill = guide_legend(nrow = 7))
+
+```
+
+The pie charts show that the outcome "investigation complete; no suspect identified" had the highest proportion among all the outcomes, and that the categories bicycle theft, burglary, arson, other theft,  theft from the person, and vehicle crime in particular were most likely to have this outcome. This could be due to the fact that these categories are all most likely to be reported after the incident has taken place, meaning it is a lot harder to find the perpetrator, whereas almost all the other crimes (i.e. anti-social behavior, drugs, other crime, possession of weapons) are crimes in which the police are most likely to catch them in the act. For bicycle theft, theft from the person and vehicle crime in particular, where the damage is relatively minimal, lack of time and police resources could also contribute to being unable to identify the suspect as it would be too costly to find the perpetrators for such small crimes.
+
+Unfortunately, despite having the highest frequency of the crimes, the pie charts also show that violent crime has the highest proportion of the category 'unable to prosecute suspect', with around 50% of all violent crime resulting in this outcome. This could be due to the fact that a lot of offences that fall under this category (e.g. common assault, Actual Bodily Harm, Grievous Bodily Harm) rely on hearsay if the incident had occurred in a secluded area for example, and therefore may have insufficient evidence to prosecute the suspect. Again, more information on the categories within violent crime committed (rather than violent crime as a general category) would be needed in order to analyse why there is such a high proportion of of suspects being unable to be prosecuted.
+
+
+# Location and Crime Data
+
+### Map of category of crimes
+
+```{r, message=FALSE, warning=FALSE}
+
+library(leaflet)
+
+crime_data %>%
+  leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(data = crime_data[crime_data$category=="anti-social-behaviour",], radius = 3, group = "Anti-social Behaviour") %>% 
+  addCircleMarkers(data = crime_data[crime_data$category=="bicycle-theft",], radius = 3, group = "Bicycle Theft") %>%
+  addCircleMarkers(data = crime_data[crime_data$category=="burglary",], radius = 3, group = "Burglary") %>%
+   addCircleMarkers(data = crime_data[crime_data$category=="criminal-damage-arson",], radius = 3, group = "Criminal Damage Arson") %>%
+ addCircleMarkers(data = crime_data[crime_data$category=="drugs",], radius = 3, group = "Drugs") %>%
+   addCircleMarkers(data = crime_data[crime_data$category=="other-theft",], radius = 3, group = "Other Theft") %>%
+   addCircleMarkers(data = crime_data[crime_data$category=="possession-of-weapons",], radius = 3, group = "Possession of Weapons") %>%
+  addCircleMarkers(data = crime_data[crime_data$category=="public-order",], radius = 3, group = "Public Order") %>%
+  addCircleMarkers(data = crime_data[crime_data$category=="robbery",], radius = 3, group = "Robbery") %>%
+  addCircleMarkers(data = crime_data[crime_data$category=="shoplifting",], radius = 3, group = "Shoplifting") %>%
+  addCircleMarkers(data = crime_data[crime_data$category=="theft-from-the-person",], radius = 3, group = "Theft From The Person") %>%
+  addCircleMarkers(data = crime_data[crime_data$category=="vehicle-crime",], radius = 3, group = "Vehicle Crime") %>%
+  addCircleMarkers(data = crime_data[crime_data$category=="violent-crime",], radius = 3, group = "Violent Crime") %>%
+  addCircleMarkers(data = crime_data[crime_data$category=="other-crime",], radius = 3, group = "Other Crime") %>%
+  addLayersControl(
+    overlayGroups = c("Anti-social Behaviour", "Bicycle Theft", "Burglary", "Criminal Damage Arson", "Drugs", "Other Theft", "Possession of Weapons", "Public Order", "Robbery", "Shoplifting", "Theft From The Person", "Vehicle Crime", "Violent Crime", "Other Crime"),  # Creates layer control for each category
+    options = layersControlOptions(collapsed = FALSE)
+  )
+
+```
+
+From the map above, if we view each of the categories one at a time, we can see that most crimes tend to happen in the city centre, aside from burglary, vehicle crime, violent crime, and other crime, which all tend to be slightly more spread out. This is understandable since there are a higher density of people in the city centre and so there would not only be more people to commit and witness crimes, but there would also be more opportunities to commit crimes as well, for example with anti-social behaviour, bicycle theft, public order, shoplifting, and theft from the person. On the other hand, although this also applies to burglary, vehicle crime, and violent crime, these crimes might also be more spread out because these crimes can happen in secluded areas as well.
+
+### Frequency of location types
+
+```{r}
+
+#calculate frequencies for each location type
+Force_freq <- sum(crime_data$location_type == "Force")
+BTP_freq <- sum(crime_data$location_type == "BTP")
+
+#create data frame
+Location_type_df <- data.frame(
+  Location_Type = c("Force", "BTP"), 
+  Frequency = c(Force_freq, BTP_freq))
+
+#create table
+knitr::kable(Location_type_df,align = "cccc",caption="Table showing the frequencies of each location type.")
+
+```
+
+
+The frequency table shows the number of crimes that took place on a normal police force location (Force) and the number that took place on a British Transport location, which is the policing area for the UK rail network.  As one would expect, there is a much higher number that took place on a normal police force location, as generally this tends to cover a much larger area. A more detailed analysis on the proportions of the different crime categories and their type of location is covered below.
+
+
+### Proportion of crime categories according to location type
+
+```{r}
+ggplot(crime_data, aes(x="",  fill = category)) +
+  geom_bar(stat = "count", width = 1, position =  "fill") + 
+  coord_polar("y", start=0) + 
+  theme_void() +
+  facet_wrap(~ location_type, nrow = 1) +
+  scale_fill_manual(values = c("orange","orchid3", "lightgoldenrod", "darkolivegreen3","lightsteelblue4", "plum","lightpink","ivory2", "rosybrown3", "hotpink","lightskyblue4", "seagreen", "royalblue4", "cadetblue3"))
+```
+
+As violent crime had by far the highest frequency and was relatively spread out throughout the map, it is unsurprising that this category had the highest proportion in both the BTP locations and Force locations, and that categories such as shoplifting and burglary are not present in the BTP locations.  What is interesting to note, however, is that the BTP locations had a much higher proportion of crimes that fall under the bicycle theft category, as one would think that bicycle theft would happen more in housing areas or near shops, rather than the railway network. This could be due to a higher density of bicycles being parked in these areas making it easier for perpetrators to find bicycles that are not secured so well.
+
+The pie charts also show that the BTP locations also had a higher proportion of the 'other theft' category compared to the Force locations. This could be attributed to people accidentally leaving their possessions either on the train or at the train station, which is a lot easier for perpetrators to steal.
+
+Additionally, they also show that there were a higher proportion of crimes that fall under the 'public order' category in the BTP locations. For clarification, public order includes threatening unlawful violence, using abusive or insulting words or behaviour, stirring up racial hatred, and offences in connection with alcohol and trains, among other things (2).
+
+However, it is also important to note that as there are only 24 BTP incidents in total in comparison to the 6854 for Force locations, this could result in certain types of crime being under or over-represented for the BTP, and so more data (perhaps from various years) would be needed to see if these proportions are a general trend for the BTP locations.
+
+### Amount of crime over the course of 2023
+
+```{r, warning=FALSE, message=FALSE}
+
+library("tidyverse")
+library("lubridate")
+
+crime_data$date <- as.Date(paste0(crime_data$date, "-01")) #convert dates into date format
+
+date_occurances <- crime_data %>% count(date)
+  
+date_occurances %>%
+  ggplot(aes(x = date, y = n)) +
+  geom_line() +
+  scale_x_date(date_labels = "%b-%Y", date_breaks = "2 month") +
+  labs(title = "Crime Frequency Over Course of Year",
+       x = "Month",
+       y = "Frequency") +
+  theme_minimal()
+
+```
+
+The above graph shows the number of crimes that took place over the course of 2023. Interestingly, according to the graph, the highest frequency of crime happens in January with roughly 650 incidents, then there is a steep drop in the number in February to around 470, which is the lowest frequency during the year. Then, after some fluctuation during March to August between the 550 to 585 marks, the frequency rises again to circa 640 in September, before steadily declining until December, which had roughly 550 incidents. One possible explanation for the high amount of crime in January could be that it is the time period right after Christmas, and so people may be generally poorer from buying numerous gifts and therefore more inclined to shoplift. Additionally, people having more expensive things on display, either on the person or at their home, may also inadvertently make them be more susceptible to robbery, thievery, or burglary. This could also explain the steep decline of crimes in February, as perhaps these perpetrators may not feel the need to commit these crimes so soon afterwards.
+
+The following section will analyse whether various aspects of the weather could also have had a role to play on the number and type of crimes committed throughout the year.
+
+# Weather
+
+For this report a dataset collected from a weather station close to Colchester will be used.  The list of the variables recorded are as follows: station ID, date, average air temperature in degrees Celcius (TemperatureCAvg), maximum air temperature (TemperatureCMax), minimum air temperature (TemperatureCMin), average dew point temperature in degrees Celsius (TdAvgC), average relative humidity in percent (HrAvg), wind direction (WindkmhDir), wind speed in kilometers per hour (WindkmhInt), wind gust in km/h (WindkmhGust),  sea level pressure in hPa (PresslevHp), precipitation totals in millimeters (Precmm), total cloudiness in octants (TotClOct), cloudiness by low level clouds in octants (lowClOct), sunshine duration in hours (SunD1h), visibility in kilometres (VisKm), sea level pressure in hPa (PreselevHp) and depth of snow cover in centimeters (SnowDepcm).
+
+Naturally, it would not be possible to analyse all the variables in relation to crime, and so as some of the variables are relatively similar to one another, a correlogram was plotted to see which variables could be used instead of others.
+
+```{r Correlogram, message=FALSE, warning=FALSE}
+weather_data <- read.csv("temp2023.csv") #read in weather data
+
+# correlogram between weather variables
+
+library("plotly")
+library("ggcorrplot")
+
+weather_numeric <- na.omit(weather_data[, !names(weather_data) %in% c("station_ID", "Date", "WindkmhDir", "PreselevHp", "SnowDepcm", "Month")]) #excludes NA values - more info needed to see if NA meant 0
+
+corr_mat <- round(cor(weather_numeric), 1)
+
+ggcorrplot(corr_mat, hc.order = TRUE, type = "lower", outline.col = "white") %>% ggplotly()
+
+```
+
+The variables which show strong positive correlations are: average air temperature and minimum air temperature; average air temperature and maximum air temperature; the total cloud cover and low level cloud cover; wind speed and wind gust; and all air temperature variables and dew point, with correlation coefficients from 0.9 to 1. Surprisingly, the sunshine duration and the average temperature was not as strongly correlated as expected, with a correlation coefficient of only 0.3. The variables with relatively strong negative correlations are: the sun duration per hour and the low level clouds, sun duration and total cloud cover, and the sun duration and relative humidity, with correlation coefficients of -0.7 each.  To this end, average air temperature will be used for the temperature and dew point, wind speed for the wind, and the sun duration for cloudiness and relative humidity.
+
+### Temperature
+
+```{r}
+library("plotly")
+
+weather_data$Date <- as.Date(weather_data$Date, format = "%d/%m/%Y")
+
+weather_data <- weather_data %>% 
+  mutate(Month = format(Date, "%b"), 
+         Month = factor(Month, levels = month.abb))
+
+Temperature2023 <- ggplot(weather_data, aes(x = Month, y = TemperatureCAvg, fill = Month)) +
+  geom_boxplot() + 
+  guides(fill = "none") + 
+  labs(title = "Box Plots Showing Monthly Average Temperature", 
+       x = "Month", 
+       y = "Temperature (°C)") + 
+  scale_fill_brewer(palette = "Set3")
+ggplotly(Temperature2023, height = 500, width = 1000)
+
+```
+
+
+Aside from January, the average air temperature throughout the year seems to follow a similar pattern as the frequency of crime, with the median average temperature starting at 4.6 degrees Celsius in January, and steadily increasing until June, where it stays around 17 degrees Celsius until September, before decreasing to around 7.9 degrees Celsius in December. That is to say, it appears that generally, there was more crime as it got warmer, with the exception of January which had the highest frequency of crime but lowest temperature. In a study published in The British Journal of Criminology by Simon Field for recorded crime in England and Wales, it was found that there was strong evidence to suggest temperature has a positive effect on most types of property and violent crime (3). The same result was found in a study in New Zealand from the New Zealand Economic Papers (4). In Field's study the main explanation that was proposed was that people tend to spend more time outside the home when temperatures are warmer, and these box plots suggest the same thing.
+
+### Sunshine duration
+
+```{r}
+ggplot(weather_data, aes(x = SunD1h, fill = factor(Month))) +
+  geom_histogram(binwidth = 2) +
+  facet_wrap(~Month, ncol = 4) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(title = "Histograms Showing Sunshine Duration Throughout 2023",
+       x = "Sunshine Duration (hours)",
+       y = "Frequency") +
+  theme(legend.position = "none")
+```
+
+The facet of histograms show the counts of the sunshine duration in hours in a day for each month. The idea behind this graph was to see if sunshine may play a part into the amount of crime, as people may be inclined to spend more time outdoors when it is sunny, and as explored by Field in the study mentioned above (3), this can lead to more crime. Unfortunately the data for January and February were unavailable, and it is unclear whether this was due to there not being enough sunshine or to something else. The general trend shown by the histograms, however, is that the sunshine duration hours in March a generally very low, then increases a lot during April, with the duration hours slowly becoming longer and more frequent.  This happens until August, which has an average sunshine duration of around 7 hours. Then the frequency as well as the duration of sunshine decreases in September and carries on in this way until December, which had the highest frequency of days with just 1 - 2 hours of sunshine. As seen from the graph of the crime frequency over the course of the year, the frequency of crime fluctuated during the months from March to August, and so it is unclear whether the sunshine duration had an effect on the frequency of crime. From the months from September to December where there was a decreasing amount of sunshine, however, there was a decrease in the number of crimes during this same period. This could be an indicator that the sunshine did have an effect on the amount of crime, though more information would be needed to determine whether this is the case. 
+
+
+### Visibility levels
+
+```{r}
+
+#Scatter plot of visibility levels throughout 2023 with smoothing
+ggplot(weather_data, aes(x = Date, y = VisKm)) +
+  geom_point() +
+  geom_smooth(se = FALSE) +
+  labs(title = "Visibility Levels Throughout 2023",
+       x = "Month",
+       y = "Visibility")
+
+```
+
+The reasoning behind exploring visibility and crime frequency was that on foggier days people might be more inclined to commit crimes as they might feel that it would be easier to get away with. As shown by the scatter graph, the visibility levels in 2023 had an average of around 30km in January then decreased to around 38km in April. It then increased to around 39km in mid-August, then decreased again until the end of December. At first glance, the smoothing curve does seem to follow a similar pattern to the frequency of crime over the year, with the visibility levels decreasing slightly from January to February and rising at the end of summer, then dipping again until the end of December. However on closer inspection, the points from the scatter graph indicate that the visibility levels in September were quite low, whereas September had the second highest amount of crime in 2023 after January.  This could indicate that visibility levels do not have much influence on the amount of crimes committed, and it is also important to note that there is a lot of variability within the visibility data, and so it is hard to tell whether this could be a factor in the amount of crimes taking place. Furthermore, the crime data only gives information on the month a crime was committed rather than the exact day, so having this information might help to determine whether there is indeed a relationship between the visibility levels and the amount of crimes committed, as the amounts of crimes committed could be analysed on particularly foggy days. 
+
+### Precipitation Levels
+
+```{r Precipitation scattergraph, warning=FALSE}
+#avg precipitation per month vs freq of crime
+
+#change dates in crime data to date format
+crime_data$date <- as.Date(crime_data$date, format = "%Y-%m-%d")
+#add month column
+crime_data <- crime_data %>% mutate(Month = format(date, "%b"), Month = factor(Month, levels = month.abb))
+
+#get monthly crime frequencies and monthly precipitation levels
+crime_freq_monthly <- crime_data %>% group_by(Month) %>% summarise(Monthly_crime = n())
+precipitation_avg_monthly <- weather_data %>% group_by(Month) %>% summarise(Monthly_precipitation_avg = mean(Precmm, na.rm = TRUE))
+
+#merge into dataframe by month
+month_precip_crimefreq <- merge(precipitation_avg_monthly, crime_freq_monthly, by = "Month", all = TRUE)
+
+#order months
+month_order <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+month_precip_crimefreq$Month <- factor(month_precip_crimefreq$Month, levels = month_order)
+
+ggplot(month_precip_crimefreq, aes(x = Monthly_precipitation_avg, y = Monthly_crime)) +
+  geom_point() + 
+  labs(title = "Crime Frequency vs Precipitation a month") +
+  geom_smooth(se = FALSE)
+```
+
+In terms of precipitation, the average precipitation totals per month was plotted against the frequency of crime per month, as it has been found that precipitation can have a significant effect on the number of violent crimes recorded (4). From the above graph, however, it is unclear whether there is a relationship between the amount of precipitation and the amount of crime. On the one hand, the value in the very bottom left-hand corner of the graph shows that the month with the lowest monthly precipitation average also had the least amount of crime.  If the value in the bottom left-hand corner were to be removed, the amount of crime per month appears to stay on relatively the same levels, i.e. within the range of 550 to 600 crimes on average. Comparing the same information over multiple years could, again, help clarify whether there is a causal relationship.
+
+### Wind Speed
+
+It has been found that wind can also have an effect on criminal behaviour (5). For example, a study found there to be a negative correlation between daily domestic violence complaints and wind speed (6), and that the Santa Ana winds in Los Angeles were even found to be statistically significant in causing more homicides, as they are associated with more distress (7). Whether the wind also had an effect on the number of crimes in Colchester during 2023 is investigated below.
+
+```{r warning=FALSE}
+library("ggforce")
+
+weather_data %>%
+  ggplot(aes(x = Date, y = WindkmhInt, fill = Month)) + 
+  geom_violin() +
+  scale_fill_brewer(palette = "Set3") +
+  geom_sina(alpha = 0.5) +
+  theme(legend.position = "bottom") +
+  labs(title = "Violin Plots Showing Wind Speeds Throughout 2023",
+       x = "Month",
+       y = "Wind (km/h)")
+
+```
+
+In January the wind speed was relatively varied, with wind speeds reaching up to 34km/h. In general the wind speeds decreased in February, with the highest wind speed reaching around 27km/h. They then increase in March to 37km/h, then there is an overall decrease until August, which was the least windiest on average, with wind speeds reaching a maximum of around 22km/h. After August the wind speeds become more varied again and generally become faster, ultimately reaching wind speeds of 37km/h by the end of December.
+
+Interestingly, the violin plots show that the wind speed followed a similar trend to the amount of crime, especially until September, with the fall and rise from January to March, and the dips in June and August where the winds were considerably less. In other words, there was generally less crime when it was less windy. 
+
+### Weather and Relationship with Outcome
+
+As well as the frequency and type of crime committed, could the weather also have had an influence on the outcome? To answer this question a stacked bar chart was plotted with the percentage of offenders getting a caution each month according to the crime category.
+
+```{r}
+#create dataframe of all observations where outcome status is "offender given a caution" with month
+category_month_caution <- na.omit(crime_data[crime_data$outcome_status == "Offender given a caution", c("category","outcome_status", "Month")])
+
+category_month_caution$category <- factor(category_month_caution$category)
+
+ggplot(category_month_caution, aes(x = Month, fill = category)) + 
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Set2") +
+  xlab("Time of Year") + 
+  ylab("Proportion of Offenders Getting a Caution") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+```
+
+Before analysing the plot, a clarification of what is meant by a caution is needed. According to Bindmans (8), "use of a caution avoids the need to charge a person and initiate a prosecution, which is the route to a conviction", however, it can have "potentially serious implications for the person who accepts it". People can either accept or reject a caution, but in accepting it is also an admission of guilt. The outcome 'offender given a caution' was used for this particular plot in favour of the other outcomes as they are reserved for minor crimes, and therefore offers more flexibility for the police, so could vary depending on their mood.
+
+According to stacked bar plot, violent crime generally had lower proportions of offenders getting a caution in March, May, June and July - the months where the average temperature became warmer. Around 18% to 50% of violent crimes ended up with a caution during these months. In comparison, in January and December (when it was coldest) 75% to 100% resulted in this outcome. Similarly, for drugs and criminal damage arson, there were higher proportions of offenders getting a caution from March to July compared to the other months. This may suggest that the police were more lenient in these months, perhaps due to better mood. 
+
+Again, due to the small amount of incidents that resulted in this outcome overall in 2023 (61 in total), more data would need to be collected from various years or places to determine whether the weather has a significant impact on the outcome of a crime, and to see whether or not these observations were just due to the small sample size. Additionally, having more information could give a better indication as to whether certain categories within categories are happening more often at certain parts in the year, resulting in different outcomes.
+
+
+# Conclusion
+
+In conclusion, there are numerous factors that can influence the changing rates, types and outcome of crimes, but for Colchester in 2023, it appears that temperature and wind could have had an influence on criminal behaviour. It was also discussed, however, that more data and statistical analyses could give a better picture onto what extent the relationship between the weather and criminal behaviour existed.
+
+# References
+
+1.The Crown Prosecution Service. Violent Crime [Internet]. CPS. [cited 2024 Apr 18]. Available from: https://www.cps.gov.uk/crime-info/violent-crime
+
+2.The National Archives. Public Order Act 1986 [Internet]. legislation.gov.uk. 2024 [cited 2024 Apr 24]. Available from: https://www.legislation.gov.uk/ukpga/1986/64
+
+3. Field S. The Effect of Temperature on Crime. The British Journal of Criminology. 1992 Summer;32(3):340–351. https://doi.org/10.1093/oxfordjournals.bjc.a048222.
+
+4. Horrocks J, Menclova AK. The effects of weather on crime. New Zealand Economic Papers. 2011 Dec 1;45(3):231-54.
+
+5. Cohn EG. Weather and crime. The British Journal of Criminology. 1990 Jan 1;30(1):51-64.
+
+6. Rotton J, Frey J. Air pollution, weather, and violent crimes: concomitant time-series analysis of archival data. Journal of personality and social psychology. 1985 Nov;49(5):1207.
+
+7. Miller Jr WH. Santa Ana winds and crime. The Professional Geographer. 1968 Jan 1;20(1):23-7.
+
+8. admin. Everything you need to know about police cautions [Internet]. Bindmans. 2018 [cited 2024 Apr 25]. Available from: https://www.bindmans.com/knowledge-hub/blogs/everything-you-need-to-know-about-police-cautions/
+
+9. Wickham H, Çetinkaya-Rundel M, Grolemund G. R for data science. " O'Reilly Media, Inc."; 2023 Jun 8.
+
+10. Goldstein-Greenwood J. Data Scientist as Cartographer: An Introduction to Making Interactive Maps in R with Leaflet [Internet]. UVA Library. 2020 [cited 2024 Apr 25]. Available from: https://www.library.virginia.edu/data/articles/data-scientist-as-cartographer-an-introduction-to-making-interactive-maps-in-r-with-leaflet
+
+11. datavizpyr. How to Make Grouped Violinplot with jittered data points in R - Data Viz with Python and R [Internet]. Data Viz with Python and R - Learn to Make Plots in Python and R. 2022 [cited 2024 Apr 25]. Available from: https://datavizpyr.com/grouped-violinplot-with-jittered-data-points-in-r/
+
+12. Schork J. R Create Distinct Color Palette (5 Examples) [Internet]. Statistics Globe. 2020 [cited 2024 Apr 25]. Available from: https://statisticsglobe.com/create-distinct-color-palette-in-r
+
+13. Wickham H, François R, Henry L, Müller K, Vaughan D (2023). dplyr: A Grammar of Data Manipulation. R package version 1.1.4. Available from: https://CRAN.R-project.org/package=dplyr
+
+14. H. Wickham. ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York, 2016.

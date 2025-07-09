@@ -67,7 +67,7 @@ This project explores how **crime rates in Colchester (UK)** vary across time, s
 📦 crime-weather-analysis/  
 ┣ 📄 Crime_Weather_Analysis.html ← Full interactive report  
 ┣ 📄 README.md ← This file  
-┣ 📄 /scripts/ ← R script for creating whole Rmd file  
+┣ 📄 Crime_Weather_Analysis.Rmd ← R script for creating whole Rmd file  
 ┗ 📁 /data/ ← Datasets  
 
 

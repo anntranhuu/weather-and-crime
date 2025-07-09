@@ -48,7 +48,7 @@ This project explores how **crime rates in Colchester (UK)** vary across time, s
 - **Line Charts**: Monthly crime trends
 - **Interactive Correlogram**: Correlogram of weather variables
 - **Boxplots**: Monthly temperatures
-- **Histogram Facet**: Sunshine Duration Throughout 2023  
+- **Histogram Facet**: Sunshine duration throughout 2023  
 
 
 ---
